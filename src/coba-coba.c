@@ -32,6 +32,10 @@ int main(int argc, char** argv) {
     // if (rank != 0) {
     //     MPI_Recv(&foo_inst, 1, mpiFoo, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     // }
+
+    if (rank != 0) {
+        
+    }
     MPI_Finalize();
 
     return 0;

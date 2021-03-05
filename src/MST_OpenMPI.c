@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <mpi.h>
 #include <string.h>
+#include <stdlib.h>
 
 // Define edge
 struct Edge {
@@ -74,8 +75,21 @@ void scatterEdges(struct Edge* edgeList, struct Edge* edgeListPart, const int nu
     MPI_Scatter(edgeList, *num_edge_part, mpiFoo, edgeListPart, *num_edge_part, mpiFoo, 0, MPI_COMM_WORLD);
 }
 
-void sort();
-void mergeSort();
+int comparator(const void* a, const void* b) {
+    struct Edge* a1 = (struct Edge*)a;
+    struct Edge* b1 = (struct Edge*)b;
+    return a1->weight > b1->weight;
+}
+
+
+void sort(struct Graph graph) {
+    
+
+}
+
+void mergeSort(struct Edge* edgeList, int start, int end) {
+    
+}
 void kruskal(struct Graph* graph, struct Graph* mst) {
 
 }
