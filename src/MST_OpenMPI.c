@@ -57,4 +57,25 @@ void graph_union(struct Subset subsets[], int x, int y) {
         subsets[yroot].parent = xroot;
         subsets[xroot].rank++;
     }
+    
+}
+
+
+void scatterEdges(struct Edge* edgeList, struct Edge* edgeListPart, const int num_edge, int* num_edge_part) {
+    int rank;
+    int size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    MPI_Datatype mpiFoo;
+    MPI_Type_contiguous( 3, MPI_INT, &mpiFoo );
+    MPI_Type_commit( &mpiFoo );
+    
+    MPI_Scatter(edgeList, *num_edge_part, mpiFoo, edgeListPart, *num_edge_part, mpiFoo, 0, MPI_COMM_WORLD);
+}
+
+void sort();
+void mergeSort();
+void kruskal(struct Graph* graph, struct Graph* mst) {
+
 }
