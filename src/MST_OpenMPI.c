@@ -67,7 +67,7 @@ void graph_union(struct Subset subsets[], int x, int y) {
 
 
 void scatterEdges(struct Edge* edgeList, struct Edge* edgeListPart, const int num_edge, int* num_edge_part) {
-    printf("masuk scatter edges\n");
+    // printf("masuk scatter edges\n");
     int rank;
     int size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -92,7 +92,7 @@ void scatterEdges(struct Edge* edgeList, struct Edge* edgeListPart, const int nu
 }
 
 void merge(struct Edge* edgeList, const int start, const int mid, const int end) {
-    printf("masuk merge\n");
+    // printf("masuk merge\n");
     int left_len = mid - start + 1;
     int right_len = end - mid;
     // printf("nilai right len: %d\n",right_len);
@@ -135,9 +135,9 @@ void merge(struct Edge* edgeList, const int start, const int mid, const int end)
         k++;
     }
     // printf("nilai k: %d\n",k);
-    for (int it = 0; it < k; it++) {
-        printf("merge %d-%d=%d\n",edgeList[it].first,edgeList[it].sec,edgeList[it].weight);
-    }
+    // for (int it = 0; it < k; it++) {
+    //     printf("merge %d-%d=%d\n",edgeList[it].first,edgeList[it].sec,edgeList[it].weight);
+    // }
 
 }
 
@@ -193,10 +193,10 @@ void parallelSort(struct Graph* graph) {
     }
 
     //sort
-    printf("num_edge_part %d: %d\n",rank,num_edge_part);
-    for (int k = 0; k < num_edge_part; k++) {
-        printf("edges ke %d dari proses %d: %d-%d\n",k,rank,edge_list_part[k].first,edge_list_part[k].sec);
-    }
+    // printf("num_edge_part %d: %d\n",rank,num_edge_part);
+    // for (int k = 0; k < num_edge_part; k++) {
+    //     printf("edges ke %d dari proses %d: %d-%d\n",k,rank,edge_list_part[k].first,edge_list_part[k].sec);
+    // }
     mergeSort(edge_list_part,0,num_edge_part-1);
     // defining datatype edge
     MPI_Datatype MPI_Edge;
@@ -206,7 +206,7 @@ void parallelSort(struct Graph* graph) {
     if (isParallel) {
         int src,dest,elmt_recv;
         for (int step = 1; step < size; step *= 2) {
-            // kalo sedang ada di rank yg kelipatan 2, karena kebagi 2 terus scatternya
+            // kalo sedang ada di rank yg kelipatan 2, karena pake mergesort
             if (rank % (2*step) == 0) {
                 src = rank+step;
                 // receive how many element
@@ -215,17 +215,17 @@ void parallelSort(struct Graph* graph) {
                 edge_list_part = realloc(edge_list_part,sizeof(struct Edge)*(elmt_recv+num_edge_part));
                 // receive the edge list
                 MPI_Recv(&edge_list_part[num_edge_part],elmt_recv, MPI_Edge, src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
-                for (int i = 0; i < num_edges; i++) {
-                    printf("setelah reecv:%d-%d=%d\n",edge_list_part[i].first,edge_list_part[i].sec,edge_list_part[i].weight);
-                }
+                // for (int i = 0; i < num_edges; i++) {
+                //     printf("setelah reecv:%d-%d=%d\n",edge_list_part[i].first,edge_list_part[i].sec,edge_list_part[i].weight);
+                // }
                 // merge the received list
                 merge(edge_list_part, 0, num_edge_part-1, num_edge_part+elmt_recv-1);
                 num_edge_part += elmt_recv;
             }
-            else {
+            else if (rank % step == 0){
                 dest = rank-step;
                 MPI_Send(&num_edge_part,1, MPI_INT, dest, 0, MPI_COMM_WORLD);
-                MPI_Send(&edge_list_part[elmt_recv], elmt_recv, MPI_Edge, dest, 0, MPI_COMM_WORLD);
+                MPI_Send(edge_list_part, num_edge_part, MPI_Edge, dest, 0, MPI_COMM_WORLD);
             }
         }
         if (rank == 0) {
@@ -356,7 +356,7 @@ int main (int argc, char* argv[]) {
                 }
             }
         }
-        printf("%d",E);
+        // printf("%d",E);
         
     
         // // add edge 0-1
