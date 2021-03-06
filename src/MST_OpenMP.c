@@ -5,13 +5,8 @@
 #define N 3005
 #define INF 100005
 
-struct user_definedMin { 
-    int val; 
-    int index; 
-}; 
-#pragma omp declare reduction(minimum : struct user_definedMin : omp_out = omp_in.val < omp_out.val ? omp_in : omp_out)
 
-int n, adj[N][N], selected[N], min_edge[N][2], result[N][2];
+int n, adj[N][N], visited[N], min_edge[N][2], result[N][2];
 
 int tmin(int a, int b) {
     return (a < b) ? a : b;
@@ -33,7 +28,7 @@ int main()
             if(adj[i][j] == -1) adj[i][j] = INF;
         }
 
-        selected[i] = 0;
+        visited[i] = 0;
         min_edge[i][0] = INF;
         min_edge[i][1] = -1;
     }
@@ -57,7 +52,7 @@ int main()
             int fmin_local = fmin;
             #pragma omp for nowait 
             for(j = 0; j < n; j++) {
-                if(selected[j] == 0 && min_edge[j][0] < fmin_local) {
+                if(visited[j] == 0 && min_edge[j][0] < fmin_local) {
                     fmin_local = min_edge[j][0];
                     index_local = j;
                 }
@@ -71,7 +66,7 @@ int main()
             }
         }
         t = index;
-        selected[t] = 1;
+        visited[t] = 1;
         total_weight += min_edge[t][0];
         if(min_edge[t][1] != -1) {
             result[cur][0] = tmin(t, min_edge[t][1]);
