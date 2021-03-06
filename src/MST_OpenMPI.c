@@ -64,6 +64,7 @@ void graph_union(struct Subset subsets[], int x, int y) {
 
 
 void scatterEdges(struct Edge* edgeList, struct Edge* edgeListPart, const int num_edge, int* num_edge_part) {
+    printf("masuk scatter edges\n");
     int rank;
     int size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -79,11 +80,20 @@ void scatterEdges(struct Edge* edgeList, struct Edge* edgeListPart, const int nu
     if (rank == size - 1 && num_edge % *num_edge_part != 0) {
         *num_edge_part = num_edge%*num_edge_part;
     }
+
+    else if (num_edge/2+1 < size && num_edge!=size) {
+        printf("ada yg mau error rank %d\n",rank);
+        
+       
+    }
 }
 
 void merge(struct Edge* edgeList, const int start, const int mid, const int end) {
+    printf("masuk merge\n");
     int left_len = mid - start + 1;
     int right_len = end - mid;
+    printf("nilai right len: %d\n",right_len);
+    printf("nilai end mid: %d %d\n",end, mid);
 
     // temp arrays
     struct Edge* leftside = (struct Edge*) malloc (left_len*sizeof(struct Edge));
@@ -97,8 +107,8 @@ void merge(struct Edge* edgeList, const int start, const int mid, const int end)
         rightside[j] = edgeList[mid+1+j];
     }
 
-    int i=0,j=0,k = 0;
-
+    int i=0,j=0,k = start;
+    printf("nilai k init: %d\n",k);
     while (i < left_len && j < right_len) {
         if (leftside[i].weight <= rightside[j].weight) {
             edgeList[k] = leftside[i++];
@@ -108,6 +118,7 @@ void merge(struct Edge* edgeList, const int start, const int mid, const int end)
         }
         k++;
     }
+    printf("nilai k while pertama: %d\n",k);
 
     // if there are still any
     while (i < left_len) {
@@ -119,18 +130,36 @@ void merge(struct Edge* edgeList, const int start, const int mid, const int end)
         edgeList[k] = rightside[j++];
         k++;
     }
+    printf("nilai k: %d\n",k);
+    for (int it = 0; it < k; it++) {
+        printf("merge %d-%d=%d\n",edgeList[it].first,edgeList[it].sec,edgeList[it].weight);
+    }
 
 }
 
 void mergeSort(struct Edge* edgeList, int start, int end) {
-    int mid = (start+end)/2;
-    mergeSort(edgeList, start, mid);
-    mergeSort(edgeList, mid+1, end);
-    merge(edgeList, start, mid, end);
+    int mid = start+(end-1)/2;
+    // printf("mergesort %d\n",mid);
+    // for (int i = 0; i <= end; i++) {
+    //     printf("baru msk merge sort: %d-%d=%d\n",edgeList[i].first,edgeList[i].sec,edgeList[i].weight);
+    // }
+    if (start != 2 || end!= 3) {
+        printf("start end: %d %d\n",start,end);
+
+    }
+    if (start<end){
+        mergeSort(edgeList, start, mid);
+        printf("udah masuk merge left\n");
+        mergeSort(edgeList, mid+1, end);
+        printf("udah masuk merge right\n");
+        merge(edgeList, start, mid, end);
+
+    }
 
 }
 
 void parallelSort(struct Graph* graph) {
+    printf("paralel sort\n");
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
@@ -160,6 +189,10 @@ void parallelSort(struct Graph* graph) {
     }
 
     //sort
+    printf("num_edge_part %d: %d\n",rank,num_edge_part);
+    for (int k = 0; k < num_edge_part; k++) {
+        printf("edges ke %d dari proses %d: %d-%d\n",k,rank,edge_list_part[k].first,edge_list_part[k].sec);
+    }
     mergeSort(edge_list_part,0,num_edge_part-1);
     // defining datatype edge
     MPI_Datatype MPI_Edge;
@@ -188,9 +221,9 @@ void parallelSort(struct Graph* graph) {
                 MPI_Send(edge_list_part, elmt_recv, MPI_Edge, dest, 0, MPI_COMM_WORLD);
             }
         }
-    }
-    if (rank == 0) {
-        graph->edges = edge_list_part;
+        if (rank == 0) {
+            graph->edges = edge_list_part;
+        }
     }
     else {
         graph->edges = edge_list_part;
@@ -225,7 +258,10 @@ int comparator(const void* a, const void*b) {
 
 void kruskal(struct Graph* graph) {
     // masi sequential
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     int num_vertex = graph->num_vertex;
+    printf("num vertex: %d\n",num_vertex);
     struct Edge res[num_vertex];
     // struct Edge* res = (struct Edge*) malloc (sizeof(struct Edge)*num_vertex);
     int res_it=0, edg_it=0;
@@ -235,37 +271,39 @@ void kruskal(struct Graph* graph) {
     parallelSort(graph);
     // qsort(graph->edges, graph->num_edge, sizeof(graph->edges[0]),
     //     myComp);
+    if (rank==0) {
 
-    struct Subset* subsets = (struct Subset*)malloc(sizeof(struct Subset)*num_vertex);
+        struct Subset* subsets = (struct Subset*)malloc(sizeof(struct Subset)*num_vertex);
 
-    // init parent and rank
-    for (int ver = 0; ver < num_vertex; ++ver) {
-        subsets[ver].parent = ver;
-        subsets[ver].rank = 0;
-    }
-    int minCost = 0;
-    while(res_it < num_vertex-1 && edg_it < graph->num_edge) {
-        struct Edge next_edge = graph->edges[edg_it++];
-
-        int x = find(subsets, next_edge.first);
-        int y = find(subsets, next_edge.sec);
-
-        if (x != y) {
-            res[res_it] = next_edge;
-            minCost += res[res_it++].weight;
-            graph_union(subsets,x,y);
+        // init parent and rank
+        for (int ver = 0; ver < num_vertex; ++ver) {
+            subsets[ver].parent = ver;
+            subsets[ver].rank = 0;
         }
+        int minCost = 0;
+        while(res_it < num_vertex-1 && edg_it < graph->num_edge) {
+            struct Edge next_edge = graph->edges[edg_it++];
 
+            int x = find(subsets, next_edge.first);
+            int y = find(subsets, next_edge.sec);
+
+            if (x != y) {
+                res[res_it] = next_edge;
+                minCost += res[res_it++].weight;
+                graph_union(subsets,x,y);
+            }
+
+        }
+        qsort(&res, res_it, sizeof(struct Edge),comparator);
+        printf(
+            "%d\n",minCost);
+        for ( edg_it= 0; edg_it < res_it; ++edg_it)
+        {
+            printf("%d-%d\n", res[edg_it].first,
+                res[edg_it].sec);
+        }
     }
-    qsort(&res, res_it, sizeof(struct Edge),comparator);
-    printf(
-        "%d\n",minCost);
-    for ( edg_it= 0; edg_it < res_it; ++edg_it)
-    {
-        printf("%d-%d\n", res[edg_it].first,
-            res[edg_it].sec);
-    }
-    return;
+    // return;
 }
 
 int main (int argc, char* argv[]) {
@@ -319,6 +357,7 @@ int main (int argc, char* argv[]) {
 
     }
     kruskal(graph);
+
     MPI_Finalize();
     return 0;
 }
