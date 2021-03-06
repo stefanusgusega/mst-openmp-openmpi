@@ -7,8 +7,8 @@ struct Foo {
 };
 
 int main(int argc, char** argv) {
-    struct Foo* foo_inst = (struct Foo*) malloc (sizeof(struct Foo)*8);
-    for (int i = 0; i < 8; i++) {
+    struct Foo* foo_inst = (struct Foo*) malloc (sizeof(struct Foo)*4);
+    for (int i = 0; i < 4; i++) {
         foo_inst[i].a = i;
         foo_inst[i].b = i+2;
         foo_inst[i].c = i*2;
@@ -25,13 +25,14 @@ int main(int argc, char** argv) {
     MPI_Type_contiguous( 3, MPI_INT, &mpiFoo );
     MPI_Type_commit( &mpiFoo );
 
-    struct Foo* container = (struct Foo*) malloc (sizeof(struct Foo)*8);
-    MPI_Scatter(foo_inst, 2, mpiFoo, container, 2, mpiFoo, 0, MPI_COMM_WORLD);
+    struct Foo* container = (struct Foo*) malloc (sizeof(struct Foo)*(4/size));
+    MPI_Scatter(foo_inst, 1, mpiFoo, container, 1, mpiFoo, 0, MPI_COMM_WORLD);
     
     printf("isinya %d %d %d %d\n", rank, container[0].a, container[0].b, container[0].c);
     // if (rank != 0) {
     //     MPI_Recv(&foo_inst, 1, mpiFoo, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     // }
+    // printf("%d\n", 2%0);
 
     if (rank != 0) {
         
